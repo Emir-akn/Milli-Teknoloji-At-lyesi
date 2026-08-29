@@ -138,7 +138,8 @@ async function fetchEquipmentFromSupabase() {
     return loadEquipmentFromLocalStorage();
   }
 
-  return (data || []).map((item) => normalizeSupabaseItem(item));
+  const items = (data || []).map((item) => normalizeSupabaseItem(item));
+  return items.length > 0 ? items : [...defaultEquipment];
 }
 
 function loadEquipmentFromLocalStorage() {
