@@ -2,6 +2,11 @@ const STORAGE_KEY = "milliTeknolojiEkipmanlari";
 const VIEW_STORAGE_KEY = "milliTeknolojiGorunum";
 const ADMIN_PASSWORD = "1234";
 const ADMIN_SESSION_KEY = "milliTeknolojiAdmin";
+const SUPABASE_URL = "https://vugpoxilgnlwqjivxohw.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_z9x4HVRpLRZbjaBuDh5FnA_PFjEMj0-";
+const USE_SUPABASE = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY && SUPABASE_URL !== "PASTE_YOUR_SUPABASE_URL");
+
+const supabase = USE_SUPABASE && window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
 const categoryLabels = {
   measurement: "Ölçü Aleti",
@@ -49,7 +54,7 @@ const defaultEquipment = [
   }
 ];
 
-let equipment = loadEquipment();
+let equipment = [];
 let activeFilter = "all";
 let searchTerm = "";
 let toastTimer;
@@ -58,6 +63,37 @@ let selectedDatasheetData = "";
 let selectedDatasheetName = "";
 let isAdmin = sessionStorage.getItem(ADMIN_SESSION_KEY) === "true";
 let viewMode = localStorage.getItem(VIEW_STORAGE_KEY) === "list" ? "list" : "cards";
+
+function normalizeSupabaseItem(item = {}) {
+  return {
+    ...item,
+    id: item.id || item.equipment_id || `equipment-${Date.now()}`,
+    name: item.name || "",
+    category: item.category || "general",
+    image: item.image || "",
+    description: item.description || "",
+    specs: item.specs || "",
+    safety: item.safety || "",
+    datasheetData: item.datasheetData || item.datasheet_data || "",
+    datasheetName: item.datasheetName || item.datasheet_name || "",
+    datasheetUrl: item.datasheetUrl || item.datasheet_url || ""
+  };
+}
+
+function toSupabaseRow(item) {
+  return {
+    id: item.id,
+    name: item.name,
+    category: item.category,
+    image: item.image || null,
+    description: item.description,
+    specs: item.specs,
+    safety: item.safety,
+    datasheet_data: item.datasheetData || null,
+    datasheet_name: item.datasheetName || null,
+    datasheet_url: item.datasheetUrl || null
+  };
+}
 
 const elements = {
   grid: document.querySelector("#equipmentGrid"),
@@ -92,7 +128,20 @@ const datasheetFileInfo = document.querySelector("#datasheetFileInfo");
 const datasheetFileName = document.querySelector("#datasheetFileName");
 const clearDatasheetButton = document.querySelector("#clearDatasheetButton");
 
-function loadEquipment() {
+async function fetchEquipmentFromSupabase() {
+  if (!supabase) return loadEquipmentFromLocalStorage();
+
+  const { data, error } = await supabase.from("equipment").select("*").order("created_at", { ascending: false });
+  if (error) {
+    console.error("Supabase verileri çekilemedi.", error);
+    showToast("Supabase bağlantısı kurulamadı; yerel veri kullanılacak.");
+    return loadEquipmentFromLocalStorage();
+  }
+
+  return (data || []).map((item) => normalizeSupabaseItem(item));
+}
+
+function loadEquipmentFromLocalStorage() {
   const storageCandidates = [
     () => localStorage.getItem(STORAGE_KEY),
     () => sessionStorage.getItem(STORAGE_KEY)
@@ -115,7 +164,22 @@ function loadEquipment() {
   return [...defaultEquipment];
 }
 
-function saveEquipment() {
+function loadEquipment() {
+  if (supabase) return [];
+  return loadEquipmentFromLocalStorage();
+}
+
+async function saveEquipment() {
+  if (supabase) {
+    const rows = equipment.map((item) => toSupabaseRow(item));
+    const { error } = await supabase.from("equipment").upsert(rows, { onConflict: "id" });
+    if (error) {
+      console.error("Supabase kayıt hatası.", error);
+      showToast("Supabase’e kayıt yazılamadı.");
+    }
+    return;
+  }
+
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(equipment));
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(equipment));
@@ -418,18 +482,31 @@ elements.search.addEventListener("input", (event) => { searchTerm = event.target
 document.querySelectorAll(".filter-button").forEach((button) => button.addEventListener("click", () => { activeFilter = button.dataset.filter; render(); }));
 document.querySelector("#clearFiltersButton").addEventListener("click", () => { activeFilter = "all"; searchTerm = ""; elements.search.value = ""; render(); });
 
-elements.grid.addEventListener("click", (event) => {
+elements.grid.addEventListener("click", async (event) => {
   const button = event.target.closest("button");
   const card = event.target.closest(".equipment-card");
   if (button?.classList.contains("edit-button")) { if (requireAdmin()) openForm(equipment.find((item) => item.id === button.dataset.id)); }
   else if (button?.classList.contains("delete-button")) {
     if (!requireAdmin()) return;
     const item = equipment.find((entry) => entry.id === button.dataset.id);
-    if (item && window.confirm(`“${item.name}” kaydını silmek istediğinize emin misiniz?`)) { equipment = equipment.filter((entry) => entry.id !== item.id); saveEquipment(); render(); showToast("Ekipman kaydı silindi."); }
+    if (item && window.confirm(`“${item.name}” kaydını silmek istediğinize emin misiniz?`)) {
+      equipment = equipment.filter((entry) => entry.id !== item.id);
+      if (supabase) {
+        const { error } = await supabase.from("equipment").delete().eq("id", item.id);
+        if (error) {
+          console.error("Supabase silme hatası.", error);
+          showToast("Ekipman silinemedi.");
+          return;
+        }
+      }
+      await saveEquipment();
+      render();
+      showToast("Ekipman kaydı silindi.");
+    }
   } else if (card) openDetails(equipment.find((item) => item.id === card.dataset.id));
 });
 
-elements.form.addEventListener("submit", (event) => {
+elements.form.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!requireAdmin()) return;
   const id = document.querySelector("#equipmentId").value || `equipment-${Date.now()}`;
@@ -447,7 +524,10 @@ elements.form.addEventListener("submit", (event) => {
   };
   const existingIndex = equipment.findIndex((entry) => entry.id === id);
   if (existingIndex >= 0) equipment[existingIndex] = item; else equipment.push(item);
-  saveEquipment(); render(); closeModal(elements.formModal); showToast(existingIndex >= 0 ? "Ekipman kaydı güncellendi." : "Yeni ekipman kaydedildi.");
+  await saveEquipment();
+  render();
+  closeModal(elements.formModal);
+  showToast(existingIndex >= 0 ? "Ekipman kaydı güncellendi." : "Yeni ekipman kaydedildi.");
 });
 
 elements.detailContent.addEventListener("click", (event) => {
@@ -463,5 +543,15 @@ document.querySelectorAll(".close-modal").forEach((button) => button.addEventLis
 document.addEventListener("keydown", (event) => { if (event.key === "Escape") { closeModal(elements.formModal); closeModal(elements.detailModal); } if (event.key === "/" && document.activeElement !== elements.search && !["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName)) { event.preventDefault(); elements.search.focus(); } });
 
 document.querySelector("#todayLabel").textContent = new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "short", year: "numeric" }).format(new Date()).toLocaleUpperCase("tr-TR");
-render();
-startHeroSlider();
+
+async function initializeEquipment() {
+  if (supabase) {
+    equipment = await fetchEquipmentFromSupabase();
+  } else {
+    equipment = loadEquipment();
+  }
+  render();
+  startHeroSlider();
+}
+
+initializeEquipment();
