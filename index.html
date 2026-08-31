@@ -17,7 +17,7 @@
       <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
       <span class="brand-copy"><strong>MİLLİ TEKNOLOJİ</strong><small>ATÖLYE PORTALI <i></i></small></span>
     </a>
-    <div class="topbar-meta"><span class="status-dot"></span><span>Sistem aktif</span><span class="meta-divider"></span><span id="todayLabel">28 AĞU 2026</span><button class="admin-button" id="adminButton" type="button"><span class="lock-icon">⌑</span> Yönetici Girişi</button></div>
+    <div class="topbar-meta"><span class="status-dot"></span><span>Sistem aktif</span></div>
   </header>
 
   <main class="page-shell">
@@ -35,15 +35,13 @@
         <div class="eyebrow"><span class="eyebrow-line"></span> LABORATUVAR  /  01</div>
         <h1>Ekipman ve<br><em>Ölçüm Rehberi</em></h1>
         <p class="hero-description">Atölyenizdeki ölçüm ve test cihazlarını tek bir merkezden yönetin, teknik sınırlarını inceleyin.</p>
-        <button class="button button-primary hero-action" id="openAddButton" type="button"><span class="plus-icon">+</span> Yeni Ekipman Ekle</button>
       </div>
     </section>
 
     <section class="metrics-strip" aria-label="Ekipman özeti">
       <div class="metric"><span class="metric-label">KAYITLI EKİPMAN</span><strong id="totalCount">00</strong></div>
       <div class="metric"><span class="metric-label">KATEGORİ</span><strong id="categoryCount">00</strong></div>
-      <div class="metric"><span class="metric-label">SON GÜNCELLEME</span><strong id="lastUpdate">BUGÜN</strong></div>
-      <div class="metric metric-note"><span class="signal-bars"><i></i><i></i><i></i><i></i></span><span>TEKNİK VERİLER<br><b>YEREL OLARAK KORUNUYOR</b></span></div>
+      <div class="metric metric-note"><span class="signal-bars"><i></i><i></i><i></i><i></i></span><span>TEKNİK VERİLER<br><b>STATİK VERİ KÜMESİ</b></span></div>
     </section>
 
     <section class="inventory-section" aria-labelledby="inventoryHeading">
@@ -55,10 +53,9 @@
         <label class="search-box" for="searchInput"><span class="search-icon" aria-hidden="true"></span><input id="searchInput" type="search" placeholder="Ekipman veya özellik ara..." autocomplete="off"><kbd>/</kbd></label>
         <div class="filter-group" role="group" aria-label="Kategori filtreleri">
           <button class="filter-button active" data-filter="all" type="button">Tümü <span>00</span></button>
-          <button class="filter-button" data-filter="measurement" type="button">Ölçü Aletleri <span>00</span></button>
-          <button class="filter-button" data-filter="power" type="button">Güç Sistemleri <span>00</span></button>
-          <button class="filter-button" data-filter="general" type="button">Genel Ekipman <span>00</span></button>
-          <button class="filter-button" data-filter="soldering" type="button">Lehimleme <span>00</span></button>
+          <button class="filter-button" data-filter="Ölçü Aleti" type="button">Ölçü Aletleri <span>00</span></button>
+          <button class="filter-button" data-filter="Güç Sistemleri" type="button">Güç Sistemleri <span>00</span></button>
+          <button class="filter-button" data-filter="Havya &amp; Lehim" type="button">Havya &amp; Lehim <span>00</span></button>
         </div>
       </div>
       <div class="equipment-grid" id="equipmentGrid" aria-live="polite"></div>
@@ -66,37 +63,12 @@
     </section>
   </main>
 
-  <div class="modal-backdrop hidden" id="formModal" role="presentation">
-    <section class="modal form-modal" role="dialog" aria-modal="true" aria-labelledby="formModalTitle">
-      <div class="modal-header"><div><span class="section-kicker">ENVANTER KAYDI</span><h2 id="formModalTitle">Yeni Ekipman Ekle</h2></div><button class="icon-button close-modal" type="button" aria-label="Pencereyi kapat">×</button></div>
-      <form id="equipmentForm">
-        <input id="equipmentId" type="hidden">
-        <div class="form-grid">
-          <label class="field field-wide"><span>Ekipman Adı <b>*</b></span><input id="nameInput" required maxlength="80" placeholder="Örn: Dijital Penseampermetre"></label>
-          <label class="field"><span>Kategori <b>*</b></span><select id="categoryInput" required><option value="measurement">Ölçü Aleti</option><option value="power">Güç Sistemi</option><option value="general">Genel Ekipman</option><option value="soldering">Lehimleme</option></select></label>
-          <label class="field"><span>Görsel URL'si <small>(opsiyonel)</small></span><input id="imageInput" type="url" placeholder="https://..."></label>
-          <div class="field field-wide image-upload-field"><span>Fotoğraf Ekle <small>(opsiyonel, en fazla 2 MB)</small></span><div class="image-upload-row"><label class="file-button" for="imageFileInput"><span>↑</span> Fotoğraf seç</label><input id="imageFileInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif"><button class="clear-image-button hidden" id="clearImageButton" type="button">Fotoğrafı kaldır</button></div><div class="image-preview hidden" id="imagePreview"><img id="imagePreviewImage" alt="Seçilen ekipman fotoğrafı"><span id="imagePreviewName"></span></div></div>
-          <div class="field field-wide datasheet-field"><span>Datasheet Yükle (PDF) <small>(opsiyonel)</small></span><div class="datasheet-upload-row"><label class="file-button datasheet-button-label" for="datasheetFileInput"><span>↑</span> PDF seç</label><input id="datasheetFileInput" type="file" accept=".pdf,application/pdf"><button class="clear-datasheet-button hidden" id="clearDatasheetButton" type="button">PDF'yi kaldır</button></div><div class="datasheet-file-info hidden" id="datasheetFileInfo">Seçilen PDF: <strong id="datasheetFileName">-</strong></div></div>
-          <label class="field field-wide"><span>Kısa Açıklama / Ne İşe Yarar? <b>*</b></span><textarea id="descriptionInput" required rows="3" placeholder="Cihazın temel kullanım amacını açıklayın..."></textarea></label>
-          <label class="field field-wide"><span>Teknik Özellikler / Ölçüm Limitleri <b>*</b></span><textarea id="specsInput" required rows="4" placeholder="Her özelliği yeni satıra yazabilirsiniz...\nÖrn: True-RMS\nCAT III 600V"></textarea></label>
-          <label class="field field-wide"><span>Güvenli Kullanım ve Dikkat Edilecekler <b>*</b></span><textarea id="safetyInput" required rows="4" placeholder="Güvenli kullanım notlarını ve uyarıları ekleyin..."></textarea></label>
-        </div>
-        <div class="form-footer"><span><b>*</b> Zorunlu alan</span><div><button class="button button-ghost close-modal" type="button">Vazgeç</button><button class="button button-primary" type="submit">Kaydı Sakla <span>→</span></button></div></div>
-      </form>
-    </section>
-  </div>
-
   <div class="modal-backdrop hidden" id="detailModal" role="presentation">
     <section class="modal detail-modal" role="dialog" aria-modal="true" aria-labelledby="detailTitle"><button class="icon-button close-modal detail-close" type="button" aria-label="Pencereyi kapat">×</button><div id="detailContent"></div></section>
   </div>
-  <div class="modal-backdrop hidden" id="loginModal" role="presentation">
-    <section class="modal login-modal" role="dialog" aria-modal="true" aria-labelledby="loginModalTitle">
-      <div class="modal-header"><div><span class="section-kicker">YETKİLİ ERİŞİM</span><h2 id="loginModalTitle">Yönetici Girişi</h2></div><button class="icon-button close-modal" type="button" aria-label="Pencereyi kapat">×</button></div>
-      <form id="loginForm"><label class="field"><span>Yönetici Şifresi</span><input id="passwordInput" type="password" inputmode="numeric" autocomplete="current-password" required placeholder="Şifrenizi girin"></label><p class="login-error hidden" id="loginError">Şifre hatalı. Lütfen tekrar deneyin.</p><div class="form-footer"><span class="login-hint">Yönetim araçları yalnızca yetkili kullanıcılar içindir.</span><button class="button button-primary" type="submit">Giriş Yap <span>→</span></button></div></form>
-    </section>
-  </div>
   <div class="toast" id="toast" role="status"></div>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
